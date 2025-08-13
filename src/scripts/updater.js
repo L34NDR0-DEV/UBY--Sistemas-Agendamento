@@ -40,7 +40,7 @@ class ModernUpdateManager {
             isInstalling: false,
             isDisabled: false,
             hasUpdate: false,
-            currentVersion: '1.0.0',
+            currentVersion: '1.0.3',
             latestVersion: null,
             updateInfo: null,
             downloadProgress: 0,

@@ -434,6 +434,40 @@ body {
     box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
 }
 
+/* Botão de Formulário */
+.formulario-btn {
+    background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.formulario-btn:hover {
+    background: linear-gradient(135deg, #5BA0F2 0%, #4689CD 100%);
+    box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
+}
+
+.formulario-btn.active {
+    background: linear-gradient(135deg, #357ABD 0%, #2E6BA8 100%);
+    box-shadow: 0 4px 16px rgba(74, 144, 226, 0.6);
+}
+
+.formulario-btn.active svg {
+    transform: scale(1.1);
+}
+
+/* Animação para recolher/mostrar formulário */
+.create-section {
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.create-section.hidden {
+    max-height: 0;
+    opacity: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
 .notification-badge {
     background: #FF3B30;
     color: white;

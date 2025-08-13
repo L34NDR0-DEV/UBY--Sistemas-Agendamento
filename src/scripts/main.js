@@ -391,6 +391,18 @@ function setupEventListeners() {
     
     // Sound controls - removidos pois agora são gerenciados pelos novos sistemas
     
+    // Event listener para campo de cidade - alerta sobre fuso horário
+    const cidadeSelect = document.getElementById('cidade');
+    const editCidadeSelect = document.getElementById('editCidade');
+    
+    if (cidadeSelect) {
+        cidadeSelect.addEventListener('change', handleCidadeChange);
+    }
+    
+    if (editCidadeSelect) {
+        editCidadeSelect.addEventListener('change', handleEditCidadeChange);
+    }
+    
     // Modais
     document.getElementById('closeEditModal').addEventListener('click', closeEditModal);
     document.getElementById('closeCancelModal').addEventListener('click', closeCancelModal);
@@ -1553,6 +1565,33 @@ window.confirm = function(message) {
 
 // Tornar a função global para uso em outros arquivos
 window.showCustomConfirm = showCustomConfirm;
+
+// Funções para lidar com mudança de cidade e alertas de fuso horário
+function handleCidadeChange(e) {
+    const selectedCidade = e.target.value;
+    if (selectedCidade === 'AQUIDAUANA') {
+        showTimezoneAlert();
+    }
+}
+
+function handleEditCidadeChange(e) {
+    const selectedCidade = e.target.value;
+    if (selectedCidade === 'AQUIDAUANA') {
+        showTimezoneAlert();
+    }
+}
+
+function showTimezoneAlert() {
+    const alertMessage = `⏰ ATENÇÃO: Aquidauana está em fuso horário diferente (UTC-4).\n\nLembre-se de considerar a diferença de horário ao agendar serviços para esta cidade.\n\nVerifique sempre o horário local antes de confirmar o agendamento.`;
+    
+    // Usar o sistema de toast personalizado
+    showToast('⏰ Atenção: Diferença de fuso horário para Aquidauana', 'warning', 8000);
+    
+    // Também mostrar um alert mais detalhado
+    setTimeout(() => {
+        alert(alertMessage);
+    }, 500);
+}
 
 // Verificar agendamentos esquecidos periodicamente
 setInterval(() => {

@@ -1,8 +1,0 @@
-{
-  "tag_name": "v1.0.1",
-  "target_commitish": "main",
-  "name": "Release v1.0.1",
-  "body": "## Sistema UBY Agendamentos v1.0.1\n\n### Correções\n- Corrigida configuração do autoUpdater para apontar para o repositório correto\n- Sistema de atualizações automáticas agora funciona corretamente\n\n### Melhorias\n- Otimização do sistema de verificação de atualizações\n\nEsta versão corrige problemas críticos do sistema de atualizações.",
-  "draft": false,
-  "prerelease": false
-}

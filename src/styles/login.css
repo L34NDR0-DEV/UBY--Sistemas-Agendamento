@@ -1098,3 +1098,27 @@ h1 {
         transform: translateY(0);
     }
 }
+
+/* Versão do Sistema */
+.version-info {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #666;
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid rgba(255, 107, 0, 0.2);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.version-info:hover {
+    background: rgba(255, 107, 0, 0.1);
+    color: #FF6B00;
+    transform: scale(1.05);
+}

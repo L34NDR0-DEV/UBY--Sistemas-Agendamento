@@ -1582,7 +1582,23 @@ function handleEditCidadeChange(e) {
 }
 
 function showTimezoneAlert() {
-    const alertMessage = `⏰ ATENÇÃO: Aquidauana está em fuso horário diferente (UTC-4).\n\nLembre-se de considerar a diferença de horário ao agendar serviços para esta cidade.\n\nVerifique sempre o horário local antes de confirmar o agendamento.`;
+    // Verificar se o usuário já viu o alerta
+    const currentUser = window.currentUser;
+    if (!currentUser) {
+        console.warn('Usuário não identificado para controle de alerta de fuso horário');
+        return;
+    }
+    
+    const alertKey = `aquidauana_timezone_alert_${currentUser.id}`;
+    const hasSeenAlert = localStorage.getItem(alertKey);
+    
+    // Se já viu o alerta, não mostrar novamente
+    if (hasSeenAlert === 'true') {
+        console.log('Usuário já viu o alerta de fuso horário para Aquidauana');
+        return;
+    }
+    
+    const alertMessage = `⏰ ATENÇÃO: Aquidauana está em fuso horário diferente (UTC-4).\n\nLembre-se de considerar a diferença de horário ao agendar serviços para esta cidade.\n\nVerifique sempre o horário local antes de confirmar o agendamento.\n\n✅ Esta mensagem aparecerá apenas uma vez para você.`;
     
     // Usar o sistema de toast personalizado
     showToast('⏰ Atenção: Diferença de fuso horário para Aquidauana', 'warning', 8000);
@@ -1590,6 +1606,10 @@ function showTimezoneAlert() {
     // Também mostrar um alert mais detalhado
     setTimeout(() => {
         alert(alertMessage);
+        
+        // Marcar que o usuário já viu o alerta
+        localStorage.setItem(alertKey, 'true');
+        console.log('Alerta de fuso horário marcado como visto para o usuário:', currentUser.username || currentUser.id);
     }, 500);
 }
 

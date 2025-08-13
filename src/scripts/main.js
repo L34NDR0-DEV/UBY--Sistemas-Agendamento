@@ -3018,7 +3018,7 @@ let editParadaCounter = 1; // Começar com 1 porque já temos uma parada inicial
 // Função para adicionar nova parada no formulário de criação
 function addParada() {
     paradaCounter++;
-    const container = document.getElementById('paradasContainer');
+    const container = document.getElementById('paradas-container');
     
     const paradaItem = document.createElement('div');
     paradaItem.className = 'parada-item';
@@ -3047,7 +3047,7 @@ function removeParada(paradaNumber) {
 // Função para adicionar nova parada no modal de edição
 function addEditParada() {
     editParadaCounter++;
-    const container = document.getElementById('editParadasContainer');
+    const container = document.getElementById('edit-paradas-container');
     
     const paradaItem = document.createElement('div');
     paradaItem.className = 'parada-item';
@@ -3067,7 +3067,7 @@ function addEditParada() {
 
 // Função para remover parada do modal de edição
 function removeEditParada(paradaNumber) {
-    const paradaItem = document.querySelector('#editParadasContainer [data-parada="' + paradaNumber + '"]');
+    const paradaItem = document.querySelector('#edit-paradas-container [data-parada="' + paradaNumber + '"]');
     if (paradaItem) {
         paradaItem.remove();
     }
@@ -3076,7 +3076,13 @@ function removeEditParada(paradaNumber) {
 // Função para coletar todas as paradas do formulário
 function collectParadas(prefix = '') {
     const paradas = [];
-    const container = document.getElementById(prefix ? 'editParadasContainer' : 'paradasContainer');
+    const container = document.getElementById(prefix ? 'edit-paradas-container' : 'paradas-container');
+    
+    if (!container) {
+        console.warn('Container de paradas não encontrado:', prefix ? 'edit-paradas-container' : 'paradas-container');
+        return paradas;
+    }
+    
     const inputs = container.querySelectorAll('input[type="text"]');
     
     inputs.forEach(input => {
@@ -3090,7 +3096,7 @@ function collectParadas(prefix = '') {
 
 // Função para popular paradas no modal de edição
 function populateEditParadas(paradas) {
-    const container = document.getElementById('editParadasContainer');
+    const container = document.getElementById('edit-paradas-container');
     
     // Limpar container
     container.innerHTML = '';
@@ -3136,20 +3142,10 @@ function populateEditParadas(paradas) {
     });
 }
 
-// Função para inicializar eventos das paradas
-function initializeParadasEvents() {
-    // Botão adicionar parada no formulário de criação
-    const addBtn = document.getElementById('addParadaBtn');
-    if (addBtn) {
-        addBtn.addEventListener('click', addParada);
-    }
-    
-    // Botão adicionar parada no modal de edição
-    const editAddBtn = document.getElementById('editAddParadaBtn');
-    if (editAddBtn) {
-        editAddBtn.addEventListener('click', addEditParada);
-    }
-}
+// Função para inicializar eventos das paradas (não necessária - usando onclick no HTML)
+// function initializeParadasEvents() {
+//     // Os botões usam onclick diretamente no HTML
+// }
 
 // ===== INICIALIZAÇÃO =====
 
@@ -3169,7 +3165,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Inicializar eventos das paradas dinâmicas
-    initializeParadasEvents();
+    // initializeParadasEvents(); // Removido - botões usam onclick no HTML
     
     // Inicializar WebSocket após um pequeno delay
     setTimeout(() => {

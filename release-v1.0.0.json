@@ -1,0 +1,8 @@
+{
+  "tag_name": "v1.0.0",
+  "target_commitish": "main",
+  "name": "Release v1.0.0",
+  "body": "## Sistema UBY Agendamentos v1.0.0\n\n### Funcionalidades Principais\n- Sistema completo de gestão de agendamentos\n- Interface moderna e intuitiva\n- Suporte para Windows 10 e 11\n- Sistema de notificações\n- Compartilhamento de agendamentos\n- Sistema de atualizações automáticas\n\n### Tecnologias\n- Electron\n- Node.js\n- SQLite\n- WebSocket\n\nPrimeira versão estável do sistema.",
+  "draft": false,
+  "prerelease": false
+}

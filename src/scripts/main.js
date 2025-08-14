@@ -12,6 +12,15 @@ if (typeof require !== 'undefined') {
     console.log('Require não disponível, rodando no navegador');
 }
 
+// Função para truncar endereços longos nos post-its
+function truncateAddress(address, maxLength = 35) {
+    if (!address || address.length <= maxLength) {
+        return { text: address, original: address, isTruncated: false };
+    }
+    const truncated = address.substring(0, maxLength) + '...';
+    return { text: truncated, original: address, isTruncated: true };
+}
+
 // Função para controlar o preloader
 function initializePreloader() {
     const preloader = document.getElementById('appPreloader');
@@ -659,7 +668,7 @@ async function handleCreateAgendamento(e) {
     e.preventDefault();
     
     const formData = new FormData(e.target);
-    const coordenadas = formData.get('linkCoordenadas') || document.getElementById('linkCoordenadas').value;
+
     
     // Coletar paradas dinamicamente
     const paradas = collectParadas();
@@ -675,7 +684,7 @@ async function handleCreateAgendamento(e) {
         enderecoOrigem: formData.get('enderecoOrigem') || document.getElementById('enderecoOrigem').value,
         paradas: paradas, // Array de paradas
         enderecoDestino: formData.get('enderecoDestino') || document.getElementById('enderecoDestino').value,
-        linkCoordenadas: coordenadas.trim(),
+
         observacoes: formData.get('observacoes') || document.getElementById('observacoes').value,
         prioridade: calculatePriority(formData.get('data') || document.getElementById('data').value, formData.get('horario') || document.getElementById('horario').value)
     };
@@ -760,6 +769,12 @@ async function loadAgendamentos() {
             window.reminderSystem.checkReminders();
         }
         
+        // Verificar notificações após carregar agendamentos
+        if (window.notificationSystem && typeof window.notificationSystem.checkAppointments === 'function') {
+            console.log('Verificando notificações com novos agendamentos');
+            window.notificationSystem.checkAppointments();
+        }
+        
         console.log('Chamando filterAgendamentos...');
         filterAgendamentos();
         console.log('filterAgendamentos concluído');
@@ -795,11 +810,40 @@ function filterAgendamentos() {
     switch (currentTab) {
         case 'hoje':
             // Mostrar apenas agendamentos do dia atual que não estão concluídos ou cancelados
-            filtered = sourceAgendamentos.filter(a => a.data === today && a.status !== 'Concluído' && a.status !== 'Cancelado');
+            filtered = sourceAgendamentos.filter(a => {
+                // Garantir que a data existe
+                if (!a.data) {
+                    console.log(`[DEBUG] Agendamento ${a.id} sem data - excluindo`);
+                    return false;
+                }
+                
+                // Normalizar as datas para garantir comparação correta
+                // Remover qualquer informação de tempo da data do agendamento
+                const agendamentoDate = a.data.includes('T') ? a.data.split('T')[0] : a.data;
+                const todayDate = today;
+                
+                const isToday = agendamentoDate === todayDate;
+                const isNotCompleted = a.status !== 'Concluído';
+                const isNotCanceled = a.status !== 'Cancelado';
+                
+                // Log apenas se houver problema na comparação
+                if (agendamentoDate !== todayDate && a.status !== 'Concluído' && a.status !== 'Cancelado') {
+                    console.log(`[DEBUG] Agendamento ${a.nomeCliente} (${agendamentoDate}) não é de hoje (${todayDate})`);
+                }
+                
+                return isToday && isNotCompleted && isNotCanceled;
+            });
             console.log('Agendamentos para hoje:', filtered.length);
             break;
         case 'futuros':
-            filtered = sourceAgendamentos.filter(a => a.data > today && a.status !== 'Cancelado' && a.status !== 'Concluído');
+            filtered = sourceAgendamentos.filter(a => {
+                if (!a.data) return false;
+                
+                // Normalizar a data do agendamento
+                const agendamentoDate = a.data.includes('T') ? a.data.split('T')[0] : a.data;
+                
+                return agendamentoDate > today && a.status !== 'Cancelado' && a.status !== 'Concluído';
+            });
             break;
         case 'concluidos':
             // Apenas agendamentos com status exatamente 'Concluído'
@@ -946,39 +990,54 @@ function createAgendamentoCard(agendamento) {
                     <span class="icon"><i class="fa-solid fa-headset"></i></span>
                     <span class="postit-label">Atendente:</span> <span class="postit-value">${agendamento.atendente}</span>
                 </div>
-                ${agendamento.enderecoOrigem ? `
+                ${agendamento.enderecoOrigem ? (() => {
+                    const addr = truncateAddress(agendamento.enderecoOrigem);
+                    return `
                     <div class="postit-row">
                         <span class="icon"><i class="fas fa-map-marker-alt"></i></span>
-                        <span class="postit-label">Origem:</span> <span class="postit-value">${agendamento.enderecoOrigem}</span>
+                        <span class="postit-label">Origem:</span> <span class="postit-value"${addr.isTruncated ? ` title="${addr.original.replace(/"/g, '&quot;')}"` : ''}>${addr.text}</span>
                     </div>
-                ` : ''}
+                    `;
+                })() : ''}
                 ${agendamento.paradas && agendamento.paradas.length > 0 ? 
-                    agendamento.paradas.map((parada, index) => `
+                    agendamento.paradas.map((parada, index) => {
+                        const addr = truncateAddress(parada);
+                        return `
                         <div class="postit-row">
                             <span class="icon"><i class="fas fa-route"></i></span>
-                            <span class="postit-label">Parada ${index + 1}:</span> <span class="postit-value">${parada}</span>
+                            <span class="postit-label">Parada ${index + 1}:</span> <span class="postit-value"${addr.isTruncated ? ` title="${addr.original.replace(/"/g, '&quot;')}"` : ''}>${addr.text}</span>
                         </div>
-                    `).join('') : 
+                        `;
+                    }).join('') : 
                     // Fallback para compatibilidade com dados antigos
-                    (agendamento.parada1 ? `
+                    (agendamento.parada1 ? (() => {
+                        const addr = truncateAddress(agendamento.parada1);
+                        return `
                         <div class="postit-row">
                             <span class="icon"><i class="fas fa-route"></i></span>
-                            <span class="postit-label">Parada 1:</span> <span class="postit-value">${agendamento.parada1}</span>
+                            <span class="postit-label">Parada 1:</span> <span class="postit-value"${addr.isTruncated ? ` title="${addr.original.replace(/"/g, '&quot;')}"` : ''}>${addr.text}</span>
                         </div>
-                    ` : '') +
-                    (agendamento.parada2 ? `
+                        `;
+                    })() : '') +
+                    (agendamento.parada2 ? (() => {
+                        const addr = truncateAddress(agendamento.parada2);
+                        return `
                         <div class="postit-row">
                             <span class="icon"><i class="fas fa-route"></i></span>
-                            <span class="postit-label">Parada 2:</span> <span class="postit-value">${agendamento.parada2}</span>
+                            <span class="postit-label">Parada 2:</span> <span class="postit-value"${addr.isTruncated ? ` title="${addr.original.replace(/"/g, '&quot;')}"` : ''}>${addr.text}</span>
                         </div>
-                    ` : '')
+                        `;
+                    })() : '')
                 }
-                ${agendamento.enderecoDestino ? `
+                ${agendamento.enderecoDestino ? (() => {
+                    const addr = truncateAddress(agendamento.enderecoDestino);
+                    return `
                     <div class="postit-row">
                         <span class="icon"><i class="fas fa-flag-checkered"></i></span>
-                        <span class="postit-label">Destino:</span> <span class="postit-value">${agendamento.enderecoDestino}</span>
+                        <span class="postit-label">Destino:</span> <span class="postit-value"${addr.isTruncated ? ` title="${addr.original.replace(/"/g, '&quot;')}"` : ''}>${addr.text}</span>
                     </div>
-                ` : ''}
+                    `;
+                })() : ''}
                 ${observacoes}
                 ${justificativa}
             </div>
@@ -1156,13 +1215,13 @@ function openEditModal(id) {
     document.getElementById('editAtendente').value = agendamento.atendente;
     document.getElementById('editStatus').value = agendamento.status;
     document.getElementById('editCidade').value = agendamento.cidade;
-    document.getElementById('editLinkCoordenadas').value = agendamento.linkCoordenadas || '';
+
     document.getElementById('editObservacoes').value = agendamento.observacoes || '';
     document.getElementById('editEnderecoOrigem').value = agendamento.enderecoOrigem || '';
     document.getElementById('editEnderecoDestino').value = agendamento.enderecoDestino || '';
     
     // Preencher paradas dinamicamente
-    populateEditParadas(agendamento);
+    populateEditParadas(agendamento.paradas || []);
     
     document.getElementById('editModal').classList.add('show');
 }
@@ -1187,17 +1246,10 @@ async function handleEditAgendamento(e) {
     console.log('Editing agendamento:', editingAgendamento);
     
     try {
-        const coordenadas = document.getElementById('editLinkCoordenadas').value || '';
+
         
         // Coletar paradas dinamicamente do modal de edição
-        const paradas = [];
-        const editParadaInputs = document.querySelectorAll('#edit-paradas-container .parada-input');
-        editParadaInputs.forEach(input => {
-            const value = input.value.trim();
-            if (value) {
-                paradas.push(value);
-            }
-        });
+        const paradas = collectParadas('edit');
         
         const updatedData = {
             id: editingAgendamento.id,
@@ -1205,13 +1257,13 @@ async function handleEditAgendamento(e) {
             horario: document.getElementById('editHorario').value,
             nomeCliente: document.getElementById('editNomeCliente').value,
             numeroContato: document.getElementById('editNumeroContato').value,
-            // O campo atendente não é incluído para preservar o valor original
+            atendente: document.getElementById('editAtendente').value,
             status: document.getElementById('editStatus').value,
             cidade: document.getElementById('editCidade').value,
             enderecoOrigem: document.getElementById('editEnderecoOrigem').value || '',
             paradas: paradas, // Array de paradas
             enderecoDestino: document.getElementById('editEnderecoDestino').value || '',
-            linkCoordenadas: coordenadas.trim(),
+
             observacoes: document.getElementById('editObservacoes').value || '',
             prioridade: calculatePriority(document.getElementById('editData').value, document.getElementById('editHorario').value),
             // Preservar dados originais importantes
@@ -1658,6 +1710,7 @@ function checkForgottenAgendamentos() {
                     voiceEnabled: window.voiceManager ? window.voiceManager.isEnabled() : false
                 });
                 
+                // Notificação de voz
                 if (window.voiceManager) {
                     if (window.voiceManager.isEnabled()) {
                         window.voiceManager.speakAgendamentoAtrasado(agendamento.nomeCliente, minutesLate);
@@ -1667,6 +1720,14 @@ function checkForgottenAgendamentos() {
                     }
                 } else {
                     console.warn('[DEBUG] VoiceManager não está disponível');
+                }
+                
+                // Notificação visual
+                if (window.notificationSystem) {
+                    window.notificationSystem.createLateNotification(agendamento, minutesLate);
+                    console.log('[DEBUG] Notificação visual de atraso criada');
+                } else {
+                    console.warn('[DEBUG] Sistema de notificações visuais não está disponível');
                 }
             }
         }
@@ -3069,68 +3130,145 @@ function handleWebSocketAgendamentoShared(data) {
 // Função global para atualizar agendamento via WebSocket
 window.updateAgendamentoFromWebSocket = handleWebSocketAgendamentoUpdate;
 
-// ===== GERENCIAMENTO DE PARADAS DINÂMICAS =====
+// ===== GERENCIAMENTO DE PARADAS EXPANSÍVEIS =====
 
-let paradaCounter = 1; // Começar com 1 porque já temos uma parada inicial
-let editParadaCounter = 1; // Começar com 1 porque já temos uma parada inicial
+let paradaCounter = 0;
+let editParadaCounter = 0;
+let paradasExpanded = false;
+let editParadasExpanded = false;
+
+// Função para alternar a visibilidade das paradas no formulário principal
+function toggleParadas() {
+    const container = document.getElementById('paradas-container');
+    const button = document.querySelector('.btn-toggle-paradas');
+    const icon = button.querySelector('.toggle-icon');
+    
+    paradasExpanded = !paradasExpanded;
+    
+    if (paradasExpanded) {
+        container.style.display = 'block';
+        button.classList.add('expanded');
+        button.querySelector('span').textContent = 'Paradas';
+        
+        // Se não há paradas, adicionar a primeira
+        if (paradaCounter === 0) {
+            addParada();
+        }
+    } else {
+        container.style.display = 'none';
+        button.classList.remove('expanded');
+        button.querySelector('span').textContent = 'Adicionar Paradas';
+    }
+}
+
+// Função para alternar a visibilidade das paradas no modal de edição
+function toggleEditParadas() {
+    const container = document.getElementById('edit-paradas-container');
+    const button = container.parentElement.querySelector('.btn-toggle-paradas');
+    const icon = button.querySelector('.toggle-icon');
+    
+    editParadasExpanded = !editParadasExpanded;
+    
+    if (editParadasExpanded) {
+        container.style.display = 'block';
+        button.classList.add('expanded');
+        button.querySelector('span').textContent = 'Paradas';
+        
+        // Se não há paradas, adicionar a primeira
+        if (editParadaCounter === 0) {
+            addEditParada();
+        }
+    } else {
+        container.style.display = 'none';
+        button.classList.remove('expanded');
+        button.querySelector('span').textContent = 'Adicionar Paradas';
+    }
+}
 
 // Função para adicionar nova parada no formulário de criação
 function addParada() {
-    paradaCounter++;
     const container = document.getElementById('paradas-container');
+    
+    // Verificar se já temos 3 paradas (limite máximo)
+    if (paradaCounter >= 3) {
+        showToast('Máximo de 3 paradas permitidas', 'warning');
+        return;
+    }
+    
+    paradaCounter++;
     
     const paradaItem = document.createElement('div');
     paradaItem.className = 'parada-item';
     paradaItem.setAttribute('data-parada', paradaCounter);
     
     paradaItem.innerHTML = `
-        <div class="form-group">
-            <input type="text" id="parada${paradaCounter}" name="parada${paradaCounter}" placeholder="Ex: Shopping Center, Praça Central">
-            <button type="button" class="btn-remove-parada" onclick="removeParada(${paradaCounter})">
-                <i class="fas fa-times"></i>
-            </button>
+        <div class="form-group full-width">
+            <label for="parada-${paradaCounter}">
+                <i class="fas fa-map-marker-alt"></i>
+                Parada ${paradaCounter}
+            </label>
+            <div class="parada-input-container">
+                <input type="text" id="parada-${paradaCounter}" class="parada-input" placeholder="Ex: Shopping Center, Praça Central">
+                <button type="button" class="btn-remove-parada" onclick="removeParada(${paradaCounter})">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
         </div>
     `;
     
-    container.appendChild(paradaItem);
+    // Adicionar botão de adicionar mais se não existir e não chegamos ao limite
+    if (!container.querySelector('.btn-add-parada') && paradaCounter < 3) {
+        const addButton = document.createElement('button');
+        addButton.type = 'button';
+        addButton.className = 'btn-add-parada';
+        addButton.onclick = addParada;
+        addButton.innerHTML = '<i class="fas fa-plus"></i> Adicionar Parada';
+        container.appendChild(addButton);
+    }
+    
+    // Inserir antes do botão de adicionar
+    const addButton = container.querySelector('.btn-add-parada');
+    if (addButton) {
+        container.insertBefore(paradaItem, addButton);
+        
+        // Se chegamos ao limite, remover o botão
+        if (paradaCounter >= 3) {
+            addButton.remove();
+        }
+    } else {
+        container.appendChild(paradaItem);
+    }
 }
 
 // Função para remover parada do formulário de criação
 function removeParada(paradaNumber) {
     const paradaItem = document.querySelector(`[data-parada="${paradaNumber}"]`);
+    const container = document.getElementById('paradas-container');
+    
     if (paradaItem) {
         paradaItem.remove();
+        paradaCounter--;
+        
+        // Se não há mais paradas, fechar a seção
+        if (paradaCounter === 0) {
+            toggleParadas();
+            return;
+        }
+        
+        // Recriar botão de adicionar se necessário
+        if (!container.querySelector('.btn-add-parada') && paradaCounter < 3) {
+            const addButton = document.createElement('button');
+            addButton.type = 'button';
+            addButton.className = 'btn-add-parada';
+            addButton.onclick = addParada;
+            addButton.innerHTML = '<i class="fas fa-plus"></i> Adicionar Parada';
+            container.appendChild(addButton);
+        }
     }
 }
 
-// Função para adicionar nova parada no modal de edição
-function addEditParada() {
-    editParadaCounter++;
-    const container = document.getElementById('edit-paradas-container');
-    
-    const paradaItem = document.createElement('div');
-    paradaItem.className = 'parada-item';
-    paradaItem.setAttribute('data-parada', editParadaCounter);
-    
-    paradaItem.innerHTML = `
-        <div class="form-group">
-            <input type="text" id="editParada${editParadaCounter}" name="editParada${editParadaCounter}" placeholder="Ex: Shopping Center, Praça Central">
-            <button type="button" class="btn-remove-parada" onclick="removeEditParada(${editParadaCounter})">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    `;
-    
-    container.appendChild(paradaItem);
-}
-
-// Função para remover parada do modal de edição
-function removeEditParada(paradaNumber) {
-    const paradaItem = document.querySelector('#edit-paradas-container [data-parada="' + paradaNumber + '"]');
-    if (paradaItem) {
-        paradaItem.remove();
-    }
-}
+// Modal de edição não permite adicionar/remover paradas
+// Apenas permite editar as paradas existentes
 
 // Função para coletar todas as paradas do formulário
 function collectParadas(prefix = '') {
@@ -3142,7 +3280,7 @@ function collectParadas(prefix = '') {
         return paradas;
     }
     
-    const inputs = container.querySelectorAll('input[type="text"]');
+    const inputs = container.querySelectorAll('.parada-input');
     
     inputs.forEach(input => {
         if (input.value.trim()) {
@@ -3156,49 +3294,54 @@ function collectParadas(prefix = '') {
 // Função para popular paradas no modal de edição
 function populateEditParadas(paradas) {
     const container = document.getElementById('edit-paradas-container');
+    const button = container.parentElement.querySelector('.btn-toggle-paradas');
+    const paradasSection = container.parentElement;
     
-    // Limpar container
+    // Resetar estado
     container.innerHTML = '';
     editParadaCounter = 0;
+    editParadasExpanded = false;
     
-    // Se não há paradas, adicionar uma parada vazia
-    if (!paradas || paradas.length === 0) {
-        editParadaCounter = 1;
-        const paradaItem = document.createElement('div');
-        paradaItem.className = 'parada-item';
-        paradaItem.setAttribute('data-parada', '1');
+    // Se há paradas, expandir automaticamente
+    if (paradas && paradas.length > 0) {
+        // Mostrar a seção de paradas
+        paradasSection.style.display = 'block';
         
-        paradaItem.innerHTML = `
-            <div class="form-group">
-                <input type="text" id="editParada1" name="editParada1" placeholder="Ex: Shopping Center, Praça Central">
-                <button type="button" class="btn-remove-parada" onclick="removeEditParada(1)">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        `;
+        // Expandir a seção
+        container.style.display = 'block';
+        button.classList.add('expanded');
+        button.querySelector('span').textContent = 'Paradas';
+        editParadasExpanded = true;
         
-        container.appendChild(paradaItem);
-        return;
+        // Adicionar cada parada
+        paradas.forEach((parada, index) => {
+            editParadaCounter = index + 1;
+            const paradaItem = document.createElement('div');
+            paradaItem.className = 'parada-item';
+            paradaItem.setAttribute('data-parada', editParadaCounter);
+            
+            paradaItem.innerHTML = `
+                <div class="form-group full-width">
+                    <label for="edit-parada-${index + 1}">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Parada ${index + 1}
+                    </label>
+                    <input type="text" id="edit-parada-${index + 1}" class="parada-input" value="${parada}" placeholder="Ex: Shopping Center, Praça Central">
+                </div>
+            `;
+            
+            container.appendChild(paradaItem);
+        });
+        
+        // Modal de edição não deve ter botão de adicionar paradas
+        // Apenas mostra as paradas existentes para edição
+    } else {
+        // Ocultar completamente a seção de paradas se não há paradas
+        paradasSection.style.display = 'none';
+        container.style.display = 'none';
+        button.classList.remove('expanded');
+        button.querySelector('span').textContent = 'Adicionar Paradas';
     }
-    
-    // Adicionar paradas existentes
-    paradas.forEach((parada, index) => {
-        editParadaCounter = index + 1;
-        const paradaItem = document.createElement('div');
-        paradaItem.className = 'parada-item';
-        paradaItem.setAttribute('data-parada', editParadaCounter);
-        
-        paradaItem.innerHTML = `
-            <div class="form-group">
-                <input type="text" id="editParada${editParadaCounter}" name="editParada${editParadaCounter}" value="${parada}" placeholder="Ex: Shopping Center, Praça Central">
-                <button type="button" class="btn-remove-parada" onclick="removeEditParada(${editParadaCounter})">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        `;
-        
-        container.appendChild(paradaItem);
-    });
 }
 
 // Função para inicializar eventos das paradas (não necessária - usando onclick no HTML)
@@ -3216,6 +3359,13 @@ document.addEventListener('DOMContentLoaded', function() {
         window.notificationSystem = new window.NotificationSystem();
         console.log('[SUCCESS] Sistema de notificações inicializado');
         
+        // Verificar agendamentos após um pequeno delay para garantir que os dados estejam carregados
+        setTimeout(() => {
+            if (window.notificationSystem && window.agendamentos) {
+                window.notificationSystem.checkAppointments();
+                console.log('[DEBUG] Verificação inicial de agendamentos executada');
+            }
+        }, 3000);
 
     } else if (window.notificationSystem) {
         console.log('[INFO] Sistema de notificações já inicializado');

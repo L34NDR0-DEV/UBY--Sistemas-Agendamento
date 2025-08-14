@@ -142,6 +142,10 @@ class WhatsAppModal {
         // Verificar nomes específicos para emojis personalizados
         if (atendenteNome.toLowerCase().includes('taiane')) {
             atendenteEmoji = '👩🏾‍💼'; 
+        } else if (atendenteNome.toLowerCase().includes('bruno felix') || 
+                   atendenteNome.toLowerCase().includes('bruno antônio') ||
+                   atendenteNome.toLowerCase().includes('bruno antonio')) {
+            atendenteEmoji = '👨🏾‍💼';
         } else if (atendenteNome.toLowerCase().includes('ana') || 
                    atendenteNome.toLowerCase().includes('maria') || 
                    atendenteNome.toLowerCase().includes('julia') ||
@@ -157,7 +161,7 @@ class WhatsAppModal {
         const urlDestino = this.currentAgendamento.urlEnderecoDestino || '';
 
         const partes = [];
-        partes.push(`*agendamento*`);
+        partes.push(`*Agendamento*`);
         partes.push('');
         partes.push(`🗓️ *Data:* ${formatDate}`);
         partes.push(`🕐 *Horário:* ${this.currentAgendamento.horario}`);

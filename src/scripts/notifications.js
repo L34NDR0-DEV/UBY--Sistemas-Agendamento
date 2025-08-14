@@ -433,7 +433,7 @@ class NotificationSystem {
         const appointments = window.agendamentos.filter(a => a.status === 'agendado');
 
         appointments.forEach(appointment => {
-            const appointmentTime = new Date(`${appointment.data}T${appointment.hora}`);
+            const appointmentTime = new Date(`${appointment.data}T${appointment.horario}`);
             const timeDiff = appointmentTime - now;
             const minutesDiff = Math.floor(timeDiff / (1000 * 60));
 
@@ -490,7 +490,7 @@ class NotificationSystem {
         
         // Formatar data e hora de forma mais legível
         const dataFormatada = this.formatDate(appointment.data);
-        const horaFormatada = appointment.hora;
+        const horaFormatada = appointment.horario;
         
         this.createNotification({
             id,
@@ -500,7 +500,7 @@ class NotificationSystem {
             data: {
                 cliente: appointment.cliente,
                 data: dataFormatada,
-                hora: horaFormatada,
+                horario: horaFormatada,
                 telefone: appointment.telefone,
                 servico: appointment.servico || 'Não especificado',
                 timeUntil: timeText,
@@ -571,7 +571,7 @@ class NotificationSystem {
         }
         
         const dataFormatada = this.formatDate(appointment.data);
-        const horaFormatada = appointment.hora;
+        const horaFormatada = appointment.horario;
         const atrasoFormatado = this.formatDuration(delayMinutes);
         
         this.createNotification({
@@ -582,7 +582,7 @@ class NotificationSystem {
             data: {
                 cliente: appointment.cliente,
                 data: dataFormatada,
-                hora: horaFormatada,
+                horario: horaFormatada,
                 telefone: appointment.telefone,
                 servico: appointment.servico || 'Não especificado',
                 delay: delayMinutes,
@@ -609,7 +609,7 @@ class NotificationSystem {
                     style: 'secondary',
                     callback: (data) => {
                         if (data.telefone) {
-                            const message = encodeURIComponent(`Olá ${data.cliente}, notamos que você está atrasado(a) para seu agendamento das ${data.hora}. Está tudo bem? Podemos reagendar se necessário.`);
+                            const message = encodeURIComponent(`Olá ${data.cliente}, notamos que você está atrasado(a) para seu agendamento das ${data.horario}. Está tudo bem? Podemos reagendar se necessário.`);
                             window.open(`https://wa.me/55${data.telefone.replace(/\D/g, '')}?text=${message}`);
                         }
                     }
@@ -679,7 +679,7 @@ class NotificationSystem {
         }
         
         const dataFormatada = this.formatDate(appointment.data);
-        const horaFormatada = appointment.hora;
+        const horaFormatada = appointment.horario;
         const adiantamentoFormatado = this.formatDuration(earlyMinutes);
         
         this.createNotification({
@@ -720,7 +720,7 @@ class NotificationSystem {
                     style: 'secondary',
                     callback: (data) => {
                         if (data.telefone) {
-                            const message = encodeURIComponent(`Olá ${data.cliente}, você chegou ${data.earlyFormatted} adiantado(a). Por favor, aguarde um momento. Seu horário é às ${data.hora}.`);
+                            const message = encodeURIComponent(`Olá ${data.cliente}, você chegou ${data.earlyFormatted} adiantado(a). Por favor, aguarde um momento. Seu horário é às ${data.horario}.`);
                             window.open(`https://wa.me/55${data.telefone.replace(/\D/g, '')}?text=${message}`);
                         }
                     }
@@ -759,7 +759,7 @@ class NotificationSystem {
         const id = `postponement_${appointment.id}_${Date.now()}`;
         
         // Calcular diferença de tempo
-        const originalDate = new Date(`${appointment.data}T${appointment.hora}`);
+        const originalDate = new Date(`${appointment.data}T${appointment.horario}`);
         const newDateTime = new Date(`${newDate}T${newTime}`);
         const diffMs = newDateTime.getTime() - originalDate.getTime();
         const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -790,7 +790,7 @@ class NotificationSystem {
             data: {
                 cliente: appointment.cliente,
                 dataOriginal: originalDateFormatted,
-                horaOriginal: appointment.hora,
+                horaOriginal: appointment.horario,
                 dataNova: newDateFormatted,
                 horaNova: newTime,
                 telefone: appointment.telefone,
@@ -866,7 +866,7 @@ class NotificationSystem {
             data: {
                 cliente: appointment.cliente,
                 data: this.formatDate(appointment.data),
-                hora: appointment.hora,
+                horario: appointment.horario,
                 telefone: appointment.telefone,
                 delay: delayMinutes,
                 delayFormatted: this.formatDuration(delayMinutes),

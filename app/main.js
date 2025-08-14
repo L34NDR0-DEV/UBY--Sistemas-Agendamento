@@ -414,13 +414,21 @@ ipcMain.handle('getAgendamentoById', async (event, id) => {
 });
 
 ipcMain.handle('updateAgendamento', async (event, agendamento) => {
+  console.log('[UPDATE] Recebendo dados para atualização:', agendamento);
   const agendamentos = store.get('agendamentos', []);
+  console.log('[UPDATE] Total de agendamentos antes da atualização:', agendamentos.length);
   const index = agendamentos.findIndex(a => a.id === agendamento.id);
+  console.log('[UPDATE] Índice encontrado:', index);
   if (index !== -1) {
+    const agendamentoOriginal = agendamentos[index];
+    console.log('[UPDATE] Agendamento original:', agendamentoOriginal);
     agendamentos[index] = { ...agendamentos[index], ...agendamento };
+    console.log('[UPDATE] Agendamento atualizado:', agendamentos[index]);
     store.set('agendamentos', agendamentos);
+    console.log('[UPDATE] Agendamento salvo com sucesso');
     return { success: true };
   }
+  console.log('[UPDATE] Agendamento não encontrado com ID:', agendamento.id);
   return { success: false };
 });
 
@@ -481,7 +489,7 @@ ipcMain.handle('shareAgendamento', async (event, shareData) => {
       userId: toUserId,
       type: 'agendamento_transferido',
         title: 'Novo Agendamento Transferido',
-        message: `${fromUserName} transferiu um agendamento para você: ${agendamento.cliente}`,
+        message: `${fromUserName} transferiu um agendamento para você: ${agendamento.nomeCliente}`,
       agendamentoId: agendamentoId,
       shareMessage: message,
       createdAt: new Date().toISOString(),
